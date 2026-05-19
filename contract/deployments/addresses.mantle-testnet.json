@@ -1,0 +1,21 @@
+{
+  "chainId": 5003,
+  "network": "mantle-sepolia",
+  "deployer": "0xb8cf8e77c2b92ce0c0fb3efa4b04cebfde557695",
+  "deployedAt": "2026-05-19",
+  "contracts": {
+    "AegisAgent": "0xef571ecd58ee26e3c4ca6be8cab6a88abc58a6a7",
+    "UserRiskProfile": "0xe7fa28e17be54a8a1c30d8f6638f8c42bbc5fad2",
+    "RiskPolicy": "0xc9cfdd1150f6048ce90d215d971ed327bc45d45a",
+    "YieldVault": "0x1ae32dfd7f063a13134cdcd5c194631843e158c0",
+    "AdviceCommitment": "0x41271490144e382b51457f2e09f6ad3edefc1fb8",
+    "AutoRebalancer": "0xf5caec80ab327b5d0988974d938f29db66eff8d7",
+    "PositionIntent": "0xb3efe937539b09979a75d119441ed3869e899aef"
+  },
+  "external": {
+    "USDY": "0x376bDf7EF380D2868E80F570559a211A82061a9F",
+    "mETH": "0x6e6742bA7C02214C2B798954f1084d94E7f02b0C",
+    "MerchantMoeRouter": "0x9A20C36A7ADE62E50C682707D2e8278d8Daf805C"
+  },
+  "notes": "Using mock USDY/mETH/router on Mantle Sepolia testnet for hackathon MVP."
+}
