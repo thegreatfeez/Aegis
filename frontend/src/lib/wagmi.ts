@@ -8,7 +8,6 @@ export const config = createConfig(
     transports: {
       [mantleSepoliaTestnet.id]: http('https://rpc.sepolia.mantle.xyz'),
     },
-    // Required API Keys
     walletConnectProjectId: 'def4ca562725e1a1200155b41a227eb5',
     appName: 'Aegis',
   })
