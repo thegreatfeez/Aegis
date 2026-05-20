@@ -34,8 +34,4 @@ export default defineConfig({
       vm: 'vm-browserify',
     },
   },
-  optimizeDeps: {
-    // Rely on pre-processing or explicit aliases instead of crashing Rolldown with esbuildOptions
-    disabled: false,
-  }
 })
