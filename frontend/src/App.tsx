@@ -3,21 +3,21 @@ import { DashboardLayout } from './layout/DashboardLayout';
 import { Dashboard } from './components/Dashboard';
 import { Insights } from './components/Insights';
 import { Strategy } from './components/Strategy';
+import { Landing } from './components/Landing';
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Landing/Dashboard Layout */}
+        <Route path="/" element={<Landing />} />
+
         <Route element={<DashboardLayout />}>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/insights" element={<Insights />} />
           <Route path="/strategy" element={<Strategy />} />
         </Route>
 
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
