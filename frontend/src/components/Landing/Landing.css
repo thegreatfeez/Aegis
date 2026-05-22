@@ -1,0 +1,51 @@
+/* Custom styling for Landing page sections */
+
+.landing-section-glow {
+  position: relative;
+}
+
+.landing-section-glow::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 200px;
+  background: radial-gradient(circle, rgba(47, 111, 237, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.step-number-pill {
+  background: linear-gradient(135deg, #2F6FED 0%, #2FBF71 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.how-to-card {
+  background: linear-gradient(145deg, #161A22 0%, #1B2230 100%);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.how-to-card:hover {
+  transform: translateY(-8px);
+  border-color: #2F6FED;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.about-feature-icon {
+  /* background: radial-gradient(circle at center, #2F6FED 0%, transparent 80%); */
+  opacity: 0.2;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}

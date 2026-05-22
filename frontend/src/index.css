@@ -1,22 +1,106 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
 @theme {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --color-bg-primary: #0F1115;
+  --color-bg-secondary: #161A22;
+  --color-bg-card: #1B2230;
+  --color-text-primary: #F3F4F6;
+  --color-text-secondary: #A1A8B3;
+  --color-text-muted: #6B7280;
+  --color-accent-blue: #2F6FED;
+  --color-accent-success: #2FBF71;
+  --color-accent-warning: #D97706;
+  --color-accent-danger: #DC2626;
+  --color-border-subtle: #2A3242;
+
+  --font-sans: 'Inter', sans-serif;
+  --font-heading: 'Space Grotesk', sans-serif;
 }
 
-@layer base {
-  body {
-    @apply bg-black text-zinc-100;
-  }
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom glow effects */
-.glow-indigo {
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+.btn-primary {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--color-accent-blue);
+  color: white;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: filter 0.2s, transform 0.1s;
+  box-shadow: 0 8px 24px rgba(47, 111, 237, 0.2);
+  cursor: pointer;
 }
 
-.glass-zinc {
-  background: rgba(24, 24, 27, 0.5);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(39, 39, 42, 0.5);
+.btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border-radius: 12px;
+  font-weight: 700;
+  border: 1px solid var(--color-border-subtle);
+  transition: background-color 0.2s, transform 0.1s;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-bg-card);
+}
+
+.btn-secondary:active {
+  transform: scale(0.97);
+}
+
+.input-field {
+  width: 100%;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  color: white;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-field:focus {
+  border-color: var(--color-accent-blue);
+}
+
+.input-field::placeholder {
+  color: var(--color-text-muted);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-subtle);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }

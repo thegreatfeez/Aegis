@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useAccount, useReadContract, useWriteContract } from 'wagmi';
+import { useState, useEffect } from 'react';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { 
   Bot, 
   ShieldCheck, 
@@ -18,6 +18,7 @@ import {
 import { fetchAIRecommendation, type AIRecommendation } from '../../services/ai';
 import { Card } from '../Shared/Card';
 import { Badge } from '../Shared/Badge';
+import { cn } from '../../lib/utils';
 
 export const Strategy = () => {
   const { address } = useAccount();
@@ -25,7 +26,17 @@ export const Strategy = () => {
   const [recommendation, setRecommendation] = useState<AIRecommendation | null>(null);
   const [executionStep, setExecutionStep] = useState<'idle' | 'fetching' | 'committing' | 'executing' | 'success'>('idle');
 
-  const { writeContract: writeCommitment } = useWriteContract();
+  const { writeContract: writeCommitment, data: hash } = useWriteContract();
+
+  const { isLoading: isWaiting, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  useEffect(() => {
+    if (isConfirmed) {
+      setExecutionStep('idle');
+    }
+  }, [isConfirmed]);
 
   const { data: userProfile } = useReadContract({
     address: CONTRACT_ADDRESSES.UserRiskProfile,
@@ -45,21 +56,21 @@ export const Strategy = () => {
   }, [address, userProfile, recommendation, executionStep]);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <Card>
-            <h2 className="text-2xl font-bold mb-2">Strategy Builder</h2>
-            <p className="text-zinc-500 mb-8">Allocate your target exposure across Mantle RWA assets.</p>
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 font-sans">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+        <div className="lg:col-span-2 space-y-6 md:space-y-8">
+          <Card className="bg-bg-card/40 border-border-subtle p-6 md:p-10">
+            <h2 className="text-xl md:text-2xl font-bold font-heading tracking-tight text-text-primary mb-2">Portfolio Builder</h2>
+            <p className="text-text-secondary text-xs md:text-sm mb-8 md:mb-12">Allocate target exposure for autonomous rebalancing.</p>
             
-            <div className="space-y-12 py-6">
-              <div className="space-y-4">
+            <div className="space-y-12 md:space-y-16 py-2 md:py-4">
+              <div className="space-y-6">
                 <div className="flex justify-between items-end">
                   <div>
-                    <h3 className="font-bold text-lg">USDY Weight</h3>
-                    <p className="text-sm text-zinc-500">Ondo Short-term Treasury Bills</p>
+                    <h3 className="font-bold text-xs md:text-sm tracking-widest text-text-primary">USDY Allocation</h3>
+                    <p className="text-[10px] md:text-xs  mt-1">Short-term Treasury Bill Exposure</p>
                   </div>
-                  <span className="text-3xl font-mono font-bold text-indigo-400">{usdyWeight}%</span>
+                  <span className="text-3xl md:text-4xl font-black font-heading text-accent-blue">{usdyWeight}%</span>
                 </div>
                 <div className="relative pt-2">
                   <input 
@@ -68,126 +79,126 @@ export const Strategy = () => {
                     max="100" 
                     value={usdyWeight}
                     onChange={(e) => setUsdyWeight(Number(e.target.value))}
-                    className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" 
+                    className="w-full h-2 bg-bg-secondary rounded-full appearance-none cursor-pointer accent-accent-blue border border-border-subtle p-[1px]" 
                   />
-                  <div className="flex justify-between mt-2 text-[10px] text-zinc-600 uppercase font-bold tracking-widest">
-                    <span>Conservative</span>
-                    <span>Aggressive</span>
+                  <div className="flex justify-between mt-4 text-[9px]  font-bold tracking-[0.2em]">
+                    <span>Risk-Off</span>
+                    <span className="hidden xs:block">Neutral</span>
+                    <span>Growth</span>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="flex justify-between items-end">
                   <div>
-                    <h3 className="font-bold text-lg">mETH Weight</h3>
-                    <p className="text-sm text-zinc-500">Mantle Staked ETH (LST)</p>
+                    <h3 className="font-bold text-xs md:text-sm tracking-widest text-text-primary">mETH Allocation</h3>
+                    <p className="text-[10px] md:text-xs  mt-1">Mantle Staked ETH (Liquid Yield)</p>
                   </div>
-                  <span className="text-3xl font-mono font-bold text-purple-400">{100 - usdyWeight}%</span>
+                  <span className="text-1xl md:text-4xl font-black font-heading text-accent-success">{100 - usdyWeight}%</span>
                 </div>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="100" 
-                  value={100 - usdyWeight}
-                  readOnly
-                  className="w-full h-2 bg-zinc-800 rounded-lg appearance-none opacity-50 cursor-not-allowed accent-purple-500" 
-                />
+                <div className="w-full h-2 bg-bg-secondary rounded-full border border-border-subtle p-[1px] opacity-40 overflow-hidden">
+                  <div 
+                    className="h-full bg-accent-success rounded-full transition-all"
+                    style={{ width: `${100 - usdyWeight}%` }}
+                  />
+                </div>
               </div>
             </div>
 
             {recommendation ? (
-              <div className="mt-8 p-6 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-start gap-4 animate-in fade-in zoom-in-95">
-                <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+              <div className="mt-8 md:mt-12 p-4 md:p-6 bg-bg-secondary border border-border-subtle rounded-[12px] flex items-start gap-4 animate-in fade-in zoom-in-95">
+                <div className="w-10 h-10 rounded-[10px] bg-bg-card/40 flex items-center justify-center text-accent-blue border border-border-subtle shrink-0">
                   <Bot size={20} />
                 </div>
-                <div>
-                  <p className="font-bold text-indigo-100 flex items-center gap-2">
-                    AI Recommendation
-                    <Badge variant="success">{recommendation.confidence}% Confidence</Badge>
-                  </p>
-                  <p className="text-sm text-indigo-200/70 leading-relaxed mt-1">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
+                    <p className="font-bold text-[10px] md:text-[11px] tracking-widest text-text-primary">Intelligence Recommendation</p>
+                    <Badge variant="success">{recommendation.confidence}% Match</Badge>
+                  </div>
+                  <p className="text-xs md:text-sm text-text-secondary leading-relaxed font-medium italic">
                     "{recommendation.summary}"
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="mt-8 p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl flex items-center justify-center">
-                <p className="text-zinc-500 text-sm">Fetching AI Strategy...</p>
+              <div className="mt-8 md:mt-12 p-8 bg-bg-secondary/40 border border-border-subtle border-dashed rounded-[12px] flex items-center justify-center">
+                <p className=" text-[10px] font-bold tracking-[0.2em] flex items-center gap-2">
+                  <Activity size={14} className="animate-spin" />
+                  Synchronizing AI Strategy...
+                </p>
               </div>
             )}
           </Card>
 
-          <Card className="bg-zinc-900/30 border-dashed border-zinc-700">
-            <div className="flex items-center gap-4 text-zinc-500">
-              <ShieldCheck size={24} />
-              <div>
-                <p className="text-sm font-bold">On-Chain Advisory Commitment</p>
-                <p className="text-xs">Every AI recommendation is hashed and committed on-chain for full auditability.</p>
-              </div>
+          <div className="p-4 md:p-6 bg-bg-secondary/20 border border-border-subtle border-dashed rounded-[12px] flex items-center gap-4 transition-colors hover:bg-bg-secondary/40">
+            <ShieldCheck size={24} className="text-accent-success shrink-0" />
+            <div>
+              <p className="text-xs font-bold text-text-primary tracking-tight">On-Chain Verifiability</p>
+              <p className="text-[9px] md:text-[10px]  font-medium mt-0.5 tracking-widest">Every recommendation is hashed and committed for public institutional audit.</p>
             </div>
-          </Card>
+          </div>
         </div>
 
-        <div className="space-y-8">
-          <Card className="border-indigo-500/50 ring-1 ring-indigo-500/10 shadow-[0_0_40px_rgba(79,70,229,0.1)]">
-            <h3 className="text-xl font-bold mb-6 flex items-center justify-between">
-              Execution
+        <div className="space-y-6 md:space-y-8 h-fit lg:sticky lg:top-28">
+          <Card className="border-accent-blue/30 bg-bg-card/40 relative p-6 md:p-8">
+            <h3 className="text-lg md:text-xl font-bold font-heading tracking-tight text-white mb-6 md:mb-8 border-b border-border-subtle pb-4">
+              Order Builder
             </h3>
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">From</label>
-                <div className="p-4 bg-zinc-900 rounded-xl border border-zinc-800 flex justify-between items-center bg-zinc-900/50 backdrop-blur-md">
+            <div className="space-y-6 md:space-y-8">
+              <div className="space-y-3">
+                <label className="text-[10px] tracking-widest  font-bold ml-1">Source Asset</label>
+                <div className="p-4 md:p-5 bg-bg-secondary rounded-[10px] border border-border-subtle flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center text-indigo-400">
+                    <div className="w-8 h-8 bg-bg-card/40 rounded-[8px] flex items-center justify-center text-accent-blue border border-border-subtle">
                       <Wallet size={16} />
                     </div>
-                    <span className="font-bold">USDY</span>
+                    <span className="font-bold text-text-primary text-sm md:text-base">USDY</span>
                   </div>
                   <div className="text-right">
-                    <span className="font-mono text-sm block">1,240.50</span>
-                    <span className="text-[10px] text-zinc-500">$1,240.50</span>
+                    <span className="font-mono text-xs md:text-sm font-bold block text-text-primary">1,240.50</span>
+                    <span className="text-[9px] md:text-[10px]  font-bold tracking-widest">Balance</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-center -my-3 relative z-10">
-                <div className="w-10 h-10 bg-black border border-zinc-800 rounded-2xl flex items-center justify-center text-indigo-400 shadow-2xl rotate-45">
-                  <ArrowRightLeft size={18} className="-rotate-45" />
+              <div className="flex justify-center -my-3 md:-my-4 relative z-10">
+                <div className="w-9 h-9 md:w-10 md:h-10 bg-bg-primary border border-border-subtle rounded-[10px] flex items-center justify-center  shadow-2xl">
+                  <ArrowRightLeft size={16} />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">To (Estimated)</label>
-                <div className="p-4 bg-zinc-900 rounded-xl border border-zinc-800 flex justify-between items-center bg-zinc-900/50 backdrop-blur-md">
+              <div className="space-y-3">
+                <label className="text-[10px] tracking-widest  font-bold ml-1">Target Allocation</label>
+                <div className="p-4 md:p-5 bg-bg-secondary rounded-[10px] border border-border-subtle flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center text-purple-400">
+                    <div className="w-8 h-8 bg-bg-card/40 rounded-[8px] flex items-center justify-center text-accent-success border border-border-subtle">
                       <TrendingUp size={16} />
                     </div>
-                    <span className="font-bold">mETH</span>
+                    <span className="font-bold text-text-primary text-sm md:text-base">mETH</span>
                   </div>
                   <div className="text-right">
-                    <span className="font-mono text-sm block text-emerald-400">0.457</span>
-                    <span className="text-[10px] text-zinc-500">~$1,238.90</span>
+                    <span className="font-mono text-xs md:text-sm font-bold block text-accent-success/80">0.457</span>
+                    <span className="text-[9px] md:text-[10px]  font-bold tracking-widest">Estimated</span>
                   </div>
                 </div>
               </div>
               
-              <div className="pt-6 border-t border-zinc-800 space-y-3">
-                <div className="flex justify-between text-xs">
-                  <span className="text-zinc-500">Slippage Tolerance</span>
-                  <span className="text-zinc-300 font-medium">0.5%</span>
+              <div className="pt-6 md:pt-8 border-t border-border-subtle space-y-3 md:space-y-4">
+                <div className="flex justify-between text-[10px] md:text-[11px] font-bold tracking-widest">
+                  <span className="">Slippage Guard</span>
+                  <span className="text-text-secondary">0.5% bps</span>
                 </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-zinc-500">Network Fee</span>
-                  <span className="text-zinc-300 font-medium">~0.002 MNT</span>
+                <div className="flex justify-between text-[10px] md:text-[11px] font-bold tracking-widest">
+                  <span className="">Protocol Fee</span>
+                  <span className="text-text-secondary">0.02%</span>
                 </div>
               </div>
 
               {recommendation && (
-                <div className="p-3 bg-zinc-900 rounded-lg border border-zinc-800/50">
-                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-1">Commitment Hash</p>
-                  <p className="text-[10px] font-mono text-zinc-400 truncate text-emerald-400/80">
+                <div className="p-3.5 bg-bg-primary rounded-[8px] border border-border-subtle/50">
+                  <p className="text-[8px] md:text-[9px]  tracking-[0.2em] font-black mb-1.5">Strategy Commitment</p>
+                  <p className="text-[9px] md:text-[10px] font-mono text-accent-success truncate opacity-80">
                     {keccak256(toHex(JSON.stringify(recommendation)))}
                   </p>
                 </div>
@@ -213,21 +224,25 @@ export const Strategy = () => {
                     ],
                   } as any);
                 }}
-                disabled={!recommendation || executionStep !== 'idle'}
-                className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-zinc-800 disabled:to-zinc-800 text-white rounded-xl font-bold transition-all shadow-[0_0_30px_rgba(99,102,241,0.3)] active:scale-[0.98] flex items-center justify-center gap-2 group"
+                disabled={!recommendation || executionStep !== 'idle' || isWaiting}
+                className="btn-primary w-full py-4 md:py-5 text-xs md:text-sm tracking-[0.2em] flex items-center justify-center gap-3 disabled:bg-bg-secondary disabled:border-border-subtle disabled: group"
               >
-                {executionStep === 'committing' ? (
+                {isWaiting ? (
                   <>
-                    <Bot className="animate-bounce" size={18} />
-                    Committing Advice...
+                    <Activity className="animate-spin" size={16} />
+                    Confirming...
                   </>
-                ) : executionStep === 'executing' ? (
+                ) : executionStep === 'committing' ? (
                   <>
-                    <Activity className="animate-spin" size={18} />
-                    Rebalancing Assets...
+                    <Bot className="animate-pulse" size={16} />
+                    Processing...
                   </>
-                ) : 'Confirm & Execute'}
-                <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                ) : (
+                  <>
+                    Execute Build
+                    <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
               </button>
             </div>
           </Card>

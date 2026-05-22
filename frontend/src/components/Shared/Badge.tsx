@@ -3,12 +3,12 @@ import { cn } from '../../lib/utils';
 
 export const Badge = ({ children, variant = 'default' }: { children: React.ReactNode; variant?: 'default' | 'success' | 'warning' }) => {
   const styles = {
-    default: "bg-zinc-800 text-zinc-400",
-    success: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
-    warning: "bg-amber-500/10 text-amber-400 border border-amber-500/20",
+    default: "bg-bg-secondary text-text-muted",
+    success: "bg-accent-success/10 text-accent-success",
+    warning: "bg-accent-warning/10 text-accent-warning border border-accent-warning/30",
   };
   return (
-    <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", styles[variant])}>
+    <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-widest", styles[variant])}>
       {children}
     </span>
   );

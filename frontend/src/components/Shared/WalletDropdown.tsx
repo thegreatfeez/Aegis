@@ -17,39 +17,39 @@ export const WalletDropdown = () => {
     <div className="relative">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-all font-mono text-sm"
+        className="flex items-center gap-3 px-4 py-2 bg-bg-secondary border border-border-subtle rounded-[10px] hover:border-text-muted transition-all font-mono text-xs font-bold text-text-primary"
       >
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="w-1.5 h-1.5 rounded-full bg-accent-success" />
         {formatAddress(address!)}
-        <ChevronRight size={14} className={cn("transition-transform", isOpen ? "rotate-90" : "rotate-0")} />
+        <ChevronRight size={14} className={cn("transition-transform text-text-muted", isOpen ? "rotate-90" : "rotate-0")} />
       </button>
 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-2 w-48 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-[70] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-2 border-b border-zinc-800 bg-zinc-900/50">
-              <p className="px-3 py-1 text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Network</p>
+          <div className="absolute right-0 mt-3 w-56 bg-bg-card rounded-[12px] z-[70] overflow-hidden animate-in fade-in zoom-in-95 duration-200 shadow-2xl">
+            <div className="p-3 border-b border-border-subtle bg-bg-primary/30">
+              <p className="px-2 py-1 text-[9px] uppercase tracking-[0.2em] text-text-muted font-black">Environment</p>
               <button 
                 onClick={() => {
                   if (chains[0]) switchChain({ chainId: chains[0].id });
                   setIsOpen(false);
                 }}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-zinc-800 rounded-lg transition-colors flex items-center justify-between"
+                className="w-full text-left px-2 py-2.5 text-[11px] font-bold text-text-secondary hover:bg-bg-secondary rounded-[8px] transition-colors flex items-center justify-between group"
               >
-                {chain?.name || 'Mantle Sepolia'}
+                <span className="group-hover:text-text-primary">{chain?.name || 'Mantle Sepolia'}</span>
                 <Badge variant="success">Online</Badge>
               </button>
             </div>
-            <div className="p-1">
+            <div className="p-1.5">
               <button 
                 onClick={() => {
                   disconnect();
                   setIsOpen(false);
                 }}
-                className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2"
+                className="w-full text-left px-2 py-2.5 text-[11px] font-bold text-accent-danger hover:bg-accent-danger/10 rounded-[8px] transition-colors flex items-center gap-3"
               >
-                <X size={14} /> Disconnect
+                <X size={14} /> Kill Session
               </button>
             </div>
           </div>
