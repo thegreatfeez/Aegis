@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, Outlet, Link } from 'react-router-dom';
-import { useAccount, useReadContract, useWriteContract } from 'wagmi';
+import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { 
   LayoutDashboard, 
   BrainCircuit, 
@@ -21,17 +21,54 @@ import {
 } from '../lib/contracts';
 import { WalletDropdown } from '../components/Shared/WalletDropdown';
 import { Badge } from '../components/Shared/Badge';
-import { Card } from '../components/Shared/Card';
+
+const RISK_PRESETS = [
+  {
+    label: 'Conservative',
+    idx: 0 as const,
+    dot: 'bg-accent-blue',
+    args: [1, 3000, 1000] as const,
+    maxAllocation: '30%',
+    stopLoss: '10%',
+    summary: 'Lower exposure caps with tighter downside protection.',
+  },
+  {
+    label: 'Moderate',
+    idx: 1 as const,
+    dot: 'bg-accent-success',
+    args: [2, 5000, 2000] as const,
+    maxAllocation: '50%',
+    stopLoss: '20%',
+    summary: 'Balanced risk limits for standard automated strategy flows.',
+  },
+  {
+    label: 'Aggressive',
+    idx: 2 as const,
+    dot: 'bg-accent-warning',
+    args: [3, 8000, 3500] as const,
+    maxAllocation: '80%',
+    stopLoss: '35%',
+    summary: 'Wider position limits for higher-growth strategy behavior.',
+  },
+] as const;
+
+type UserProfileRecord = readonly [`0x${string}`, number, number, number, bigint, bigint];
 
 export const DashboardLayout = () => {
   const { address, isConnected } = useAccount();
   const [showInitModal, setShowInitModal] = useState(false);
-  const [hasDismissedInit, setHasDismissedInit] = useState(false);
+  const [selectedRisk, setSelectedRisk] = useState<0 | 1 | 2>(1);
+  const [dismissedInitForAddress, setDismissedInitForAddress] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const { writeContract: writeInit, isPending: isInitializing } = useWriteContract();
+  const {
+    writeContract: writeInit,
+    data: initHash,
+    error: initError,
+    isPending: isSubmittingInit,
+  } = useWriteContract();
 
-  const { data: userProfile } = useReadContract({
+  const { data: userProfile, refetch: refetchUserProfile } = useReadContract({
     address: CONTRACT_ADDRESSES.UserRiskProfile,
     abi: USER_RISK_PROFILE_ABI,
     functionName: 'profiles',
@@ -39,7 +76,7 @@ export const DashboardLayout = () => {
     query: { enabled: !!address }
   });
 
-  const { data: agentId } = useReadContract({
+  const { data: agentId, refetch: refetchAgentId } = useReadContract({
     address: CONTRACT_ADDRESSES.AegisAgent,
     abi: AEGIS_AGENT_ABI,
     functionName: 'walletToAgentId',
@@ -47,13 +84,44 @@ export const DashboardLayout = () => {
     query: { enabled: !!address }
   });
 
-  const isProfileActive = userProfile ? (userProfile as any)[4] > 0n : false;
+  const {
+    isLoading: isConfirmingInit,
+    isSuccess: isInitConfirmed,
+    error: initReceiptError,
+  } = useWaitForTransactionReceipt({
+    hash: initHash,
+  });
+
+  const profileRecord = userProfile as UserProfileRecord | undefined;
+  const isProfileActive = !!profileRecord && profileRecord[4] > 0n;
+  const isInitBusy = isSubmittingInit || isConfirmingInit;
+  const selectedPreset = RISK_PRESETS[selectedRisk];
+  const shouldPromptForInit =
+    isConnected &&
+    userProfile !== undefined &&
+    !isProfileActive &&
+    dismissedInitForAddress !== address;
+  const isInitModalOpen = showInitModal || shouldPromptForInit;
+  const initErrorMessage =
+    (initError as { shortMessage?: string; message?: string } | null)?.shortMessage ??
+    (initError as { message?: string } | null)?.message ??
+    (initReceiptError as { shortMessage?: string; message?: string } | null)?.shortMessage ??
+    (initReceiptError as { message?: string } | null)?.message ??
+    null;
 
   useEffect(() => {
-    if (isConnected && userProfile !== undefined && !isProfileActive && !showInitModal && !hasDismissedInit) {
-      setShowInitModal(true);
-    }
-  }, [isConnected, userProfile, isProfileActive, showInitModal, hasDismissedInit]);
+    if (!isInitConfirmed) return;
+
+    const syncIdentity = window.setTimeout(() => {
+      void refetchUserProfile();
+      void refetchAgentId();
+      setShowInitModal(false);
+      setSelectedRisk(1);
+      setDismissedInitForAddress(address ?? null);
+    }, 0);
+
+    return () => window.clearTimeout(syncIdentity);
+  }, [address, isInitConfirmed, refetchAgentId, refetchUserProfile]);
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -111,7 +179,6 @@ export const DashboardLayout = () => {
           </div>
         </div>
 
-        {/* Mobile Nav Menu */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
@@ -194,11 +261,14 @@ export const DashboardLayout = () => {
                   </div>
                 ) : (
                   <button 
-                    onClick={() => setShowInitModal(true)}
-                    disabled={isInitializing}
+                    onClick={() => {
+                      setSelectedRisk(1);
+                      setShowInitModal(true);
+                    }}
+                    disabled={isInitBusy}
                     className="w-full sm:w-auto btn-primary flex items-center justify-center gap-3 py-3 px-8 text-sm"
                   >
-                    {isInitializing ? 'Processing Cipher...' : 'Initialize Identity'}
+                    {isConfirmingInit ? 'Confirming Identity...' : isSubmittingInit ? 'Check Wallet...' : 'Initialize Identity'}
                     <ChevronRight size={18} />
                   </button>
                 )}
@@ -213,81 +283,117 @@ export const DashboardLayout = () => {
       </main>
 
       <AnimatePresence>
-        {showInitModal && (
+        {isInitModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-bg-primary/95 backdrop-blur-sm" 
+              className="absolute inset-0 bg-bg-primary/80 backdrop-blur-sm"
               onClick={() => {
+                if (isInitBusy) return;
                 setShowInitModal(false);
-                setHasDismissedInit(true);
-              }} 
+                setSelectedRisk(1);
+                setDismissedInitForAddress(address ?? null);
+              }}
             />
             <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-lg bg-bg-primary border-t sm:border-t-0 sm:border border-border-subtle rounded-t-[32px] sm:rounded-[24px] overflow-hidden shadow-2xl p-8 md:p-10"
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+              className="relative w-full max-w-[22rem] bg-bg-card border-t sm:border-t-0 sm:border border-border-subtle rounded-t-[22px] sm:rounded-[18px] overflow-hidden shadow-2xl p-5 sm:p-5"
             >
-              <button 
+              {/* Close */}
+              <button
                 onClick={() => {
+                  if (isInitBusy) return;
                   setShowInitModal(false);
-                  setHasDismissedInit(true);
+                  setSelectedRisk(1);
+                  setDismissedInitForAddress(address ?? null);
                 }}
-                className="absolute top-6 right-6 text-text-muted hover:text-text-primary transition-colors bg-bg-secondary p-2 rounded-full"
+                disabled={isInitBusy}
+                className="absolute top-4 right-4 text-text-muted hover:text-text-primary transition-colors bg-bg-secondary p-1.5 rounded-full disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <X size={20} />
+                <X size={16} />
               </button>
 
-              <div className="mb-8 md:mb-10">
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-blue mb-2 block">Agent Initialization</span>
-                <h3 className="text-2xl md:text-3xl font-black text-text-primary mb-3 tracking-tight font-heading uppercase">Configuration</h3>
-                <p className="text-text-muted text-xs md:text-sm leading-relaxed">
-                  Define the autonomous constraints for your Aegis Agent. This mints a verifiable NFT identity that governs your strategic appetite.
+              {/* Header */}
+              <div className="mb-4 pr-8">
+                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-accent-blue mb-1 block">Agent Initialization</span>
+                <h3 className="text-lg font-black text-text-primary tracking-tight font-heading uppercase">Configure Identity</h3>
+                <p className="text-text-muted text-xs leading-relaxed mt-1">
+                  This sets your on-chain risk profile so Aegis knows how far it can allocate and rebalance for you.
                 </p>
               </div>
-              
-              <div className="space-y-8 md:space-y-10">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-accent-blue mb-5">Risk Profile</label>
-                  <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 md:gap-4">
-                    {[
-                      { mode: 'Conservative', color: 'accent-blue' },
-                      { mode: 'Moderate', color: 'accent-success' },
-                      { mode: 'Aggressive', color: 'accent-warning' }
-                    ].map((item) => (
-                      <button 
-                        key={item.mode}
-                        className="group flex flex-row xs:flex-col items-center gap-3 p-4 xs:p-5 rounded-[16px] border border-border-subtle bg-bg-secondary hover:border-accent-blue transition-all text-left xs:text-center"
-                      >
-                        <div className={cn("w-2.5 h-2.5 rounded-full bg-border-subtle shrink-0", `group-hover:bg-${item.color}`)} />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted group-hover:text-text-primary">{item.mode}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
-                <div className="pt-4">
-                  <button 
-                    onClick={() => {
-                      writeInit({
-                        address: CONTRACT_ADDRESSES.UserRiskProfile,
-                        abi: USER_RISK_PROFILE_ABI,
-                        functionName: 'initialize',
-                        args: [1, 5000, 3000],
-                      } as any);
-                      setShowInitModal(false);
-                    }}
-                    className="btn-primary w-full py-4 text-base flex items-center justify-center gap-3"
-                  >
-                    Confirm & Mint Agent
-                    <ShieldCheck size={22} />
-                  </button>
+              {/* Risk selector */}
+              <div className="mb-4">
+                <label className="block text-[9px] font-bold uppercase tracking-widest text-accent-blue mb-3">Risk Profile</label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {RISK_PRESETS.map((item) => {
+                    const isSelected = selectedRisk === item.idx;
+                    return (
+                      <button
+                        key={item.label}
+                        onClick={() => setSelectedRisk(item.idx as 0 | 1 | 2)}
+                        className={cn(
+                          'flex flex-col items-center gap-1.5 px-2 py-3 rounded-[12px] border transition-all text-center',
+                          isSelected
+                            ? 'border-accent-blue bg-accent-blue/10'
+                            : 'border-border-subtle bg-bg-secondary hover:border-accent-blue/40'
+                        )}
+                      >
+                        <div className={cn('w-2 h-2 rounded-full', item.dot)} />
+                        <span className={cn(
+                          'text-[8px] font-bold uppercase tracking-widest leading-tight',
+                          isSelected ? 'text-text-primary' : 'text-text-muted'
+                        )}>{item.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
+
+              {/* Description chips */}
+              <div className="mb-4 rounded-[14px] border border-border-subtle bg-bg-secondary/70 p-3">
+                <p className="text-[10px] font-medium leading-relaxed text-text-secondary">
+                  {selectedPreset.summary}
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-center">
+                  <div className="rounded-[10px] bg-bg-primary/50 px-2 py-2">
+                    <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-text-muted">Max Alloc</p>
+                    <p className="mt-1 text-sm font-black text-text-primary">{selectedPreset.maxAllocation}</p>
+                  </div>
+                  <div className="rounded-[10px] bg-bg-primary/50 px-2 py-2">
+                    <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-text-muted">Stop Loss</p>
+                    <p className="mt-1 text-sm font-black text-text-primary">{selectedPreset.stopLoss}</p>
+                  </div>
+                </div>
+              </div>
+
+              {initErrorMessage && (
+                <div className="mb-4 rounded-[12px] border border-accent-warning/30 bg-accent-warning/10 px-3 py-2">
+                  <p className="text-[10px] leading-relaxed text-accent-warning">{initErrorMessage}</p>
+                </div>
+              )}
+
+              {/* CTA */}
+              <button
+                disabled={isInitBusy}
+                onClick={() => {
+                  writeInit({
+                    address: CONTRACT_ADDRESSES.UserRiskProfile,
+                    abi: USER_RISK_PROFILE_ABI,
+                    functionName: 'initialize',
+                    args: selectedPreset.args,
+                  });
+                }}
+                className="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isConfirmingInit ? 'Confirming On-Chain...' : isSubmittingInit ? 'Awaiting Wallet...' : 'Confirm Identity'}
+                <ShieldCheck size={16} />
+              </button>
             </motion.div>
           </div>
         )}
