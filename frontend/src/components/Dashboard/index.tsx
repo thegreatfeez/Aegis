@@ -125,7 +125,7 @@ export const Dashboard = () => {
   // Fire once when the user profile is confirmed on-chain
   useEffect(() => {
     if (!address || !userProfile) return;
-    const [, riskMode, maxPositionBps, , createdAt] = userProfile as any[];
+    const [, riskMode, maxPositionBps, , createdAt] = userProfile as unknown as any[];
     if (!createdAt) return;
     const usdyBal = usdyBalance ? Number(usdyBalance as bigint) / 1e18 : 0;
     const methBal = methBalance ? Number(methBalance as bigint) / 1e18 : 0;

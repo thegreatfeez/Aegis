@@ -151,7 +151,7 @@ export const Strategy = () => {
 
   const runAIFetch = () => {
     if (!address || !userProfile) return;
-    const [, riskMode, maxPositionBps, , createdAt] = userProfile as any[];
+    const [, riskMode, maxPositionBps, , createdAt] = userProfile as unknown as any[];
     if (!createdAt) return;
 
     fetchInitiated.current = true;

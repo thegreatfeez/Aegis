@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, ArrowRight, Activity, BrainCircuit, Zap, BookOpen, Users, Layout, Database, Bot as Robot, Shield, Menu, X, FileText } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Activity, BrainCircuit, Zap, Users, Layout, Database, Bot as Robot, Shield, Menu, X, FileText } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import './Landing.css';
 
@@ -369,7 +369,7 @@ export const Landing = () => {
               className="group text-center sm:text-left"
             >
               <div className="w-12 h-12 md:w-14 md:h-14 bg-bg-secondary rounded-[16px] flex items-center justify-center border border-border-subtle mb-6 md:mb-8 mx-auto sm:mx-0 group-hover:border-accent-blue transition-colors text-white">
-                <feature.icon className={feature.color} size={24} md:size={28} />
+                <feature.icon className={feature.color} size={24} />
               </div>
               <h3 className="text-lg md:text-xl font-bold tracking-tight mb-3 md:mb-4 font-heading uppercase tracking-tighter">{feature.title}</h3>
               <p className="text-sm text-text-secondary leading-relaxed font-medium">
