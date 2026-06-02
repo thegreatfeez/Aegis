@@ -1,0 +1,17 @@
+{
+  "_comment": "GET /api/elfa?query=USDY+RWA — Groq social sentiment: what Twitter/CT is saying",
+  "request_url": "/api/elfa?query=USDY+RWA",
+  "response": {
+    "query": "USDY RWA",
+    "score": 0.62,
+    "momentum": "bullish",
+    "mention_count": 1240,
+    "top_signals": [
+      "Ondo Finance TVL at all-time high discussed widely on CT",
+      "Institutional RWA allocation narrative gaining traction",
+      "US T-bill yield stability seen as USDY tailwind",
+      "Mantle ecosystem growth driving RWA TVL conversations"
+    ],
+    "source": "groq-analysis"
+  }
+}

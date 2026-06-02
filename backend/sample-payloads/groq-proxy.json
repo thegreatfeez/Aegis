@@ -1,0 +1,43 @@
+{
+  "_comment": "POST /api/groq-proxy — yield strategy powered by Groq wallet intelligence + social sentiment",
+  "request": {
+    "walletAddress": "0xAbCd1234567890abcdef1234567890ABCDEF1234",
+    "portfolioValueUsd": 4200.0,
+    "riskMode": 1,
+    "maxPositionBps": 5000,
+    "usdyBalance": 2500.0,
+    "methBalance": 0.5,
+    "agentId": 3
+  },
+  "response": {
+    "recommendation": {
+      "signal": "ROTATE",
+      "confidence": 78,
+      "summary": "mETH staking APY has risen to 4.8%, closing the gap with USDY's 5.1% yield. Social momentum on CT is stronger for mETH, and smart money net flows show accumulation. A moderate rotation improves risk-adjusted return for a balanced profile.",
+      "from_asset": "USDY",
+      "to_asset": "mETH",
+      "suggested_pct_shift": 12,
+      "risk_note": "mETH is subject to Mantle network validator risk and LST liquidity conditions."
+    },
+    "context": {
+      "yieldRates": {
+        "usdy": 5.1,
+        "meth": 4.8,
+        "timestamp": 1717200000000,
+        "source": { "usdy": "ondo-finance-api", "meth": "mantle-staking-contract" }
+      },
+      "walletIntelligence": {
+        "labels": ["defi_native", "rwa_holder"],
+        "isSmartMoney": false,
+        "netFlow30d": 12400,
+        "riskModifier": -3
+      },
+      "elfaSentimentUsdy": 0.62,
+      "elfaSentimentMeth": 0.71,
+      "socialSignals": {
+        "usdy": ["Ondo Finance TVL at all-time high", "US T-bill yield tailwind"],
+        "meth": ["Mantle staking APY increase trending on CT", "Growing LST adoption narrative"]
+      }
+    }
+  }
+}

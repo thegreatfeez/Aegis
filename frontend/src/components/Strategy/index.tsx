@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { 
   Bot, 
@@ -10,21 +10,23 @@ import {
   Activity
 } from 'lucide-react';
 import { keccak256, toHex, parseUnits } from 'viem';
-import { 
-  CONTRACT_ADDRESSES, 
-  USER_RISK_PROFILE_ABI, 
-  ADVICE_COMMITMENT_ABI 
+import {
+  CONTRACT_ADDRESSES,
+  USER_RISK_PROFILE_ABI,
+  ADVICE_COMMITMENT_ABI,
+  AEGIS_AGENT_ABI,
 } from '../../lib/contracts';
 import { fetchAIRecommendation, type AIRecommendation } from '../../services/ai';
 import { Card } from '../Shared/Card';
 import { Badge } from '../Shared/Badge';
-import { cn } from '../../lib/utils';
 
 export const Strategy = () => {
   const { address } = useAccount();
   const [usdyWeight, setUsdyWeight] = useState(60);
   const [recommendation, setRecommendation] = useState<AIRecommendation | null>(null);
   const [executionStep, setExecutionStep] = useState<'idle' | 'fetching' | 'committing' | 'executing' | 'success'>('idle');
+  // Prevents re-triggering the auto-fetch when executionStep resets after an error
+  const fetchInitiated = useRef(false);
 
   const { writeContract: writeCommitment, data: hash } = useWriteContract();
 
@@ -45,15 +47,42 @@ export const Strategy = () => {
     args: address ? [address] : undefined,
   });
 
+  const { data: agentId } = useReadContract({
+    address: CONTRACT_ADDRESSES.AegisAgent,
+    abi: AEGIS_AGENT_ABI,
+    functionName: 'walletToAgentId',
+    args: address ? [address] : undefined,
+  });
+
   useEffect(() => {
-    if (address && userProfile && !recommendation && executionStep === 'idle') {
-      setExecutionStep('fetching');
-      fetchAIRecommendation(address, userProfile).then(res => {
-        setRecommendation(res);
-        setExecutionStep('idle');
-      });
-    }
-  }, [address, userProfile, recommendation, executionStep]);
+    // Reset ref when wallet changes so a new address gets a fresh fetch
+    fetchInitiated.current = false;
+  }, [address]);
+
+  useEffect(() => {
+    if (!address || !userProfile || recommendation || fetchInitiated.current) return;
+
+    // userProfile is a tuple: [authority, riskMode, maxPositionBps, maxConcentrationBps, createdAt, updatedAt]
+    const [, riskMode, maxPositionBps, , createdAt] = userProfile;
+    if (!createdAt) return; // profile not yet initialised on-chain
+
+    fetchInitiated.current = true;
+    setExecutionStep('fetching');
+    fetchAIRecommendation(address, {
+      portfolioValueUsd: 0,
+      riskMode: riskMode as 0 | 1 | 2,
+      maxPositionBps: Number(maxPositionBps),
+      usdyBalance: 0,
+      methBalance: 0,
+      agentId: Number(agentId ?? 0),
+    }).then(res => {
+      setRecommendation(res);
+      setExecutionStep('idle');
+    }).catch(err => {
+      console.error('AI recommendation failed:', err);
+      setExecutionStep('idle');
+    });
+  }, [address, userProfile, agentId, recommendation]);
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 font-sans">

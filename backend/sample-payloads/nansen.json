@@ -1,0 +1,12 @@
+{
+  "_comment": "GET /api/nansen?address=0x... — Groq wallet intelligence: where big money is investing",
+  "request_url": "/api/nansen?address=0xAbCd1234567890abcdef1234567890ABCDEF1234",
+  "response": {
+    "address": "0xAbCd1234567890abcdef1234567890ABCDEF1234",
+    "labels": ["defi_native", "rwa_holder"],
+    "net_flow_30d": 12400,
+    "is_smart_money": false,
+    "risk_modifier": -3,
+    "source": "groq-analysis"
+  }
+}

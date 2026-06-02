@@ -1,0 +1,13 @@
+{
+  "_comment": "GET /api/yield-rates — current APYs for USDY and mETH",
+  "request_url": "/api/yield-rates",
+  "response": {
+    "usdy": 5.1,
+    "meth": 4.2,
+    "timestamp": 1717200000000,
+    "source": {
+      "usdy": "ondo-finance-api",
+      "meth": "mantle-staking-contract"
+    }
+  }
+}
