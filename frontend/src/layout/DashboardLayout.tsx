@@ -55,7 +55,7 @@ const RISK_PRESETS = [
 type UserProfileRecord = readonly [`0x${string}`, number, number, number, bigint, bigint];
 
 export const DashboardLayout = () => {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, isReconnecting } = useAccount();
   const [showInitModal, setShowInitModal] = useState(false);
   const [selectedRisk, setSelectedRisk] = useState<0 | 1 | 2>(1);
   const [dismissedInitForAddress, setDismissedInitForAddress] = useState<string | null>(null);
@@ -214,7 +214,12 @@ export const DashboardLayout = () => {
       </nav>
 
       <main className="max-w-7xl mx-auto px-6 py-6 md:py-10">
-        {!isConnected ? (
+        {isReconnecting ? (
+          <div className="flex flex-col items-center justify-center py-20 md:py-32 text-center">
+            <div className="w-8 h-8 border-2 border-accent-blue/30 border-t-accent-blue rounded-full animate-spin mb-4" />
+            <p className="text-[10px] font-bold tracking-widest text-text-muted">Restoring session...</p>
+          </div>
+        ) : !isConnected ? (
           <div className="flex flex-col items-center justify-center py-20 md:py-32 text-center animate-in fade-in slide-in-from-bottom-4 duration-1000">
              <div className="w-16 h-16 md:w-20 md:h-20 bg-bg-secondary rounded-[20px] flex items-center justify-center border border-border-subtle mb-6 md:mb-8 relative">
                 <Bot size={32} className="text-text-muted" />

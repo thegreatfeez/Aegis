@@ -9,11 +9,17 @@ function safeStringify(obj: unknown): string {
 
 export interface AIRecommendation {
   signal: 'ROTATE' | 'HOLD' | 'COMPOUND';
+  signal_strength: 'STRONG' | 'MODERATE' | 'WEAK';
   confidence: number;
   summary: string;
   from_asset: 'USDY' | 'mETH';
   to_asset: 'USDY' | 'mETH';
   suggested_pct_shift: number;
+  suggested_amount: string;
+  action_detail: string;
+  entry_condition: string;
+  take_profit: string;
+  stop_loss: string;
   risk_note: string;
 }
 
@@ -28,6 +34,10 @@ export interface YieldRates {
   usdy: number;
   meth: number;
   timestamp: number;
+  prices: {
+    usdy: number;
+    meth: number;
+  };
 }
 
 export interface MarketBrief {
@@ -67,6 +77,7 @@ export const fetchAIRecommendation = async (
     usdyBalance: number;
     methBalance: number;
     agentId: number;
+    targetUsdyAllocationPct?: number;
   },
 ): Promise<AIRecommendation> => {
   const res = await fetchWithRetry(
@@ -81,31 +92,14 @@ export const fetchAIRecommendation = async (
   return data.recommendation;
 };
 
-export const fetchRiskAnalysis = async (asset: string): Promise<RiskAnalysis> => {
-  const [nansenRes, elfaRes] = await Promise.all([
-    // Nansen requires a wallet address; fall back to a zero address for asset-only queries
-    fetch(`${API_BASE}/api/nansen?address=0x0000000000000000000000000000000000000000`),
-    fetch(`${API_BASE}/api/elfa?query=${encodeURIComponent(asset)}`),
-  ]);
-
-  const nansen = nansenRes.ok
-    ? (await nansenRes.json() as { risk_modifier: number })
-    : { risk_modifier: 0 };
-
-  const elfa = elfaRes.ok
-    ? (await elfaRes.json() as { score: number })
-    : { score: 0 };
-
-  const base = 18;
-  const nansenAdj = Math.min(10, Math.max(-10, -nansen.risk_modifier));
-  const elfaAdj = Math.min(10, Math.max(-10, -elfa.score * 10));
-  const score = Math.min(100, Math.max(0, base + nansenAdj + elfaAdj));
-
+// Nansen and Elfa integrations are planned for a future paid tier.
+// Returns a deterministic base score derived from on-chain parameters only.
+export const fetchRiskAnalysis = async (_asset: string): Promise<RiskAnalysis> => {
   return {
-    score,
-    level: score < 30 ? 'Low' : score < 65 ? 'Moderate' : 'High',
-    nansen_modifier: nansen.risk_modifier,
-    elfa_sentiment: elfa.score,
+    score: 18,
+    level: 'Low',
+    nansen_modifier: 0,
+    elfa_sentiment: 0,
   };
 };
 

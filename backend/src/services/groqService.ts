@@ -62,47 +62,73 @@ export interface YieldOptimizerInput {
   nansenScore: number;
   elfaSentimentUsdy: number;
   elfaSentimentMeth: number;
+  targetUsdyAllocationPct: number;
 }
 
 export async function generateYieldAnalysis(
   input: YieldOptimizerInput,
 ): Promise<AIRecommendation> {
+  const yieldSpread = Math.abs(input.usdyApy - input.methApy).toFixed(2);
+  const higherYield = input.usdyApy >= input.methApy ? 'USDY' : 'mETH';
+  const lowerYield  = input.usdyApy >= input.methApy ? 'mETH' : 'USDY';
+
   const prompt = `You are an AI yield strategy advisor for the Aegis DeFi protocol on Mantle Network.
-Analyze the following portfolio data and return a JSON recommendation.
+Analyse the following portfolio data and return a JSON recommendation.
 
 PORTFOLIO:
 - Wallet: ${input.walletAddress}
 - Agent ID (ERC-8004): ${input.agentId}
 - Risk mode: ${RISK_MODE_LABELS[input.riskMode]} (${input.riskMode})
-- Max position: ${input.maxPositionBps / 100}% of portfolio
+- Max single position: ${input.maxPositionBps / 100}% of portfolio
 - Portfolio value: $${input.portfolioValueUsd.toFixed(2)}
 - USDY balance: ${input.usdyBalance.toFixed(4)} USDY
 - mETH balance: ${input.methBalance.toFixed(4)} mETH
+- User's target allocation: ${input.targetUsdyAllocationPct}% USDY / ${100 - input.targetUsdyAllocationPct}% mETH (set by user via slider)
 
-MARKET DATA:
-- USDY APY: ${input.usdyApy.toFixed(2)}%
-- mETH staking APY: ${input.methApy.toFixed(2)}%
-- Smart money flow signal: ${input.nansenScore} (negative = large wallets accumulating these assets, positive = distributing)
-- Social sentiment USDY: ${input.elfaSentimentUsdy.toFixed(2)} (range -1.0 to +1.0, based on Twitter/social analysis)
-- Social sentiment mETH: ${input.elfaSentimentMeth.toFixed(2)} (range -1.0 to +1.0, based on Twitter/social analysis)
+LIVE MARKET DATA:
+- USDY APY: ${input.usdyApy.toFixed(2)}%  (Ondo Finance T-bill yield)
+- mETH staking APY: ${input.methApy.toFixed(2)}%  (Mantle liquid staking)
+- Current yield spread: ${yieldSpread}% in favour of ${higherYield}
+- Smart money flow: ${input.nansenScore} (negative = accumulating, positive = distributing)
+- Social sentiment USDY: ${input.elfaSentimentUsdy.toFixed(2)} (-1.0 bearish → +1.0 bullish)
+- Social sentiment mETH: ${input.elfaSentimentMeth.toFixed(2)} (-1.0 bearish → +1.0 bullish)
 
-RULES:
-- ROTATE: recommend a shift from one asset to the other (only when yield differential > 0.5% or sentiment is strongly one-sided)
-- HOLD: current allocation is optimal
-- COMPOUND: reinvest yield into the same asset without switching
+TARGET ALIGNMENT RULE:
+The user has expressed a desired allocation of ${input.targetUsdyAllocationPct}% USDY / ${100 - input.targetUsdyAllocationPct}% mETH via the portfolio slider.
+Factor this into your signal: if market conditions support moving toward the user's target, recommend ROTATE toward it. If conditions are unfavourable, recommend HOLD and explain why the user should wait before reaching their target.
+
+SIGNAL RULES:
+- ROTATE: shift from one asset to the other (yield spread > 0.5% OR sentiment strongly one-sided)
+- HOLD: current allocation is optimal — no trade needed
+- COMPOUND: reinvest accrued yield into the same asset
 - suggested_pct_shift must be 0 when signal is HOLD
-- from_asset and to_asset must differ unless signal is HOLD or COMPOUND
-- For conservative risk mode, prefer HOLD or COMPOUND; only ROTATE for clear yield advantages
+- signal_strength: STRONG when confidence >= 75, MODERATE 50-74, WEAK < 50
 
-Respond ONLY with a JSON object matching this exact schema:
+MANDATORY: every field below MUST contain the actual numbers from the portfolio data above.
+Do NOT write generic phrases like "current market conditions" or "based on analysis".
+Write specific numbers, APY values, and token amounts drawn directly from the data.
+
+- suggested_amount: multiply the from_asset balance by (suggested_pct_shift / 100). Example: if USDY balance is ${input.usdyBalance.toFixed(4)} and pct_shift is 30, write "${(input.usdyBalance * 0.3).toFixed(2)} USDY"
+- action_detail: state exactly what to sell, how many tokens (from suggested_amount), and why — cite the specific APY numbers (e.g. "Sell ${(input.usdyBalance * 0.3).toFixed(2)} USDY → buy mETH. mETH APY ${input.methApy.toFixed(2)}% + ETH price tailwind currently outpaces USDY ${input.usdyApy.toFixed(2)}% yield-only return.")
+- entry_condition: cite the current yield spread (${yieldSpread}%) and whether to act now or wait
+- take_profit: give the specific APY level at which to exit — e.g. "Exit mETH when USDY APY rises above ${(input.usdyApy + 1.5).toFixed(2)}% or mETH APY falls below ${(input.methApy * 0.75).toFixed(2)}%"
+- stop_loss: give the specific condition that makes this trade wrong — e.g. "Reverse if mETH APY drops below ${(input.methApy * 0.6).toFixed(2)}% or ${lowerYield} sentiment turns below -0.5"
+
+Respond ONLY with a JSON object:
 {
   "signal": "ROTATE" | "HOLD" | "COMPOUND",
+  "signal_strength": "STRONG" | "MODERATE" | "WEAK",
   "confidence": <integer 0-100>,
-  "summary": "<2-3 sentence rationale>",
+  "summary": "<2-3 sentence rationale using specific APY numbers>",
   "from_asset": "USDY" | "mETH",
   "to_asset": "USDY" | "mETH",
   "suggested_pct_shift": <integer 0-100>,
-  "risk_note": "<1 sentence risk caveat>"
+  "suggested_amount": "<computed token amount + asset symbol>",
+  "action_detail": "<precise instruction with exact token amounts and specific APY values>",
+  "entry_condition": "<act now / wait — cite the ${yieldSpread}% current spread>",
+  "take_profit": "<specific APY threshold numbers at which to close or rotate back>",
+  "stop_loss": "<specific APY or sentiment level that invalidates this trade>",
+  "risk_note": "<1 sentence caveat specific to these assets and risk mode>"
 }`;
 
   return withRetry(async () => {

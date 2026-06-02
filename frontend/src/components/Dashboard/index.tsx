@@ -1,20 +1,26 @@
-import { useAccount, useReadContract } from 'wagmi';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useNavigate } from 'react-router-dom';
-import { 
-  TrendingUp, 
-  History, 
+import { useEffect, useState } from 'react';
+import { parseUnits, formatUnits as viemFormatUnits } from 'viem';
+import { fetchAIRecommendation } from '../../services/ai';
+import {
+  TrendingUp,
+  History,
   ArrowRightLeft,
   Bot,
   Info,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Droplets,
+  Vault,
 } from 'lucide-react';
-import { 
-  CONTRACT_ADDRESSES, 
+import {
+  CONTRACT_ADDRESSES,
   EXTERNAL_ADDRESSES,
-  USER_RISK_PROFILE_ABI, 
+  USER_RISK_PROFILE_ABI,
   YIELD_VAULT_ABI,
   ERC20_ABI,
+  MOCK_ERC20_ABI,
   AEGIS_AGENT_ABI
 } from '../../lib/contracts';
 import { formatUnits, cn } from '../../lib/utils';
@@ -24,6 +30,7 @@ import { Badge } from '../Shared/Badge';
 export const Dashboard = () => {
   const { address } = useAccount();
   const navigate = useNavigate();
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
 
   const { data: userProfile } = useReadContract({
     address: CONTRACT_ADDRESSES.UserRiskProfile,
@@ -32,26 +39,71 @@ export const Dashboard = () => {
     args: address ? [address] : undefined,
   });
 
-  const { data: vaultBalance } = useReadContract({
+  const { data: vaultBalance, refetch: refetchVault } = useReadContract({
     address: CONTRACT_ADDRESSES.YieldVault,
     abi: YIELD_VAULT_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
   });
 
-  const { data: usdyBalance } = useReadContract({
+  const [vaultTab, setVaultTab] = useState<'deposit' | 'withdraw'>('deposit');
+  const [vaultAmount, setVaultAmount] = useState('');
+
+  const { data: vaultAllowance, refetch: refetchVaultAllowance } = useReadContract({
+    address: EXTERNAL_ADDRESSES.USDY as `0x${string}`,
+    abi: ERC20_ABI,
+    functionName: 'allowance',
+    args: address ? [address, CONTRACT_ADDRESSES.YieldVault] : undefined,
+  });
+
+  const { writeContract: approveVault, data: approveVaultHash, isPending: approvingVault } = useWriteContract();
+  const { isLoading: confirmingVaultApprove, isSuccess: vaultApproveConfirmed } = useWaitForTransactionReceipt({ hash: approveVaultHash });
+
+  const { writeContract: depositVault, data: depositHash, isPending: depositing } = useWriteContract();
+  const { isLoading: confirmingDeposit, isSuccess: depositConfirmed } = useWaitForTransactionReceipt({ hash: depositHash });
+
+  const { writeContract: withdrawVault, data: withdrawHash, isPending: withdrawing } = useWriteContract();
+  const { isLoading: confirmingWithdraw, isSuccess: withdrawConfirmed } = useWaitForTransactionReceipt({ hash: withdrawHash });
+
+  useEffect(() => { if (vaultApproveConfirmed) void refetchVaultAllowance(); }, [vaultApproveConfirmed]);
+  useEffect(() => { if (depositConfirmed) { void refetchVault(); void refetchUsdy(); setVaultAmount(''); } }, [depositConfirmed]);
+  useEffect(() => { if (withdrawConfirmed) { void refetchVault(); void refetchUsdy(); setVaultAmount(''); } }, [withdrawConfirmed]);
+
+  const vaultAmountBigInt = (() => {
+    try {
+      const n = Number(vaultAmount);
+      if (!vaultAmount || n <= 0 || !isFinite(n)) return undefined;
+      return parseUnits(String(n), 18);
+    } catch { return undefined; }
+  })();
+
+  const needsVaultApproval = vaultTab === 'deposit' && vaultAmountBigInt !== undefined &&
+    ((vaultAllowance as bigint | undefined) ?? 0n) < vaultAmountBigInt;
+
+  const { data: usdyBalance, refetch: refetchUsdy } = useReadContract({
     address: EXTERNAL_ADDRESSES.USDY as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
   });
 
-  const { data: methBalance } = useReadContract({
+  const { data: methBalance, refetch: refetchMeth } = useReadContract({
     address: EXTERNAL_ADDRESSES.mETH as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
   });
+
+  const MINT_AMOUNT = parseUnits('1000', 18);
+
+  const { writeContract: mintUsdy, data: usdyMintHash, isPending: mintingUsdy } = useWriteContract();
+  const { writeContract: mintMeth, data: methMintHash, isPending: mintingMeth } = useWriteContract();
+
+  const { isLoading: confirmingUsdy, isSuccess: usdyMinted } = useWaitForTransactionReceipt({ hash: usdyMintHash });
+  const { isLoading: confirmingMeth, isSuccess: methMinted } = useWaitForTransactionReceipt({ hash: methMintHash });
+
+  useEffect(() => { if (usdyMinted) void refetchUsdy(); }, [usdyMinted, refetchUsdy]);
+  useEffect(() => { if (methMinted) void refetchMeth(); }, [methMinted, refetchMeth]);
 
   const { data: agentId } = useReadContract({
     address: CONTRACT_ADDRESSES.AegisAgent,
@@ -70,6 +122,25 @@ export const Dashboard = () => {
 
   const [commitmentCount, executionCount] = stats as [bigint, bigint] || [0n, 0n];
 
+  // Fire once when the user profile is confirmed on-chain
+  useEffect(() => {
+    if (!address || !userProfile) return;
+    const [, riskMode, maxPositionBps, , createdAt] = userProfile as any[];
+    if (!createdAt) return;
+    const usdyBal = usdyBalance ? Number(usdyBalance as bigint) / 1e18 : 0;
+    const methBal = methBalance ? Number(methBalance as bigint) / 1e18 : 0;
+    fetchAIRecommendation(address, {
+      portfolioValueUsd: usdyBal + methBal,
+      riskMode: Number(riskMode) as 0 | 1 | 2,
+      maxPositionBps: Number(maxPositionBps),
+      usdyBalance: usdyBal,
+      methBalance: methBal,
+      agentId: Number(agentId ?? 0),
+    })
+      .then(rec => setAiSummary(rec.summary))
+      .catch(() => {});
+  }, [userProfile, address]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const assets = [
     { name: 'USDY', detail: 'Ondo Finance RWA', balance: usdyBalance, risk: 'Low Risk', initial: 'U' },
     { name: 'mETH', detail: 'Mantle Staked ETH', balance: methBalance, risk: 'Moderate', initial: 'M' }
@@ -79,7 +150,7 @@ export const Dashboard = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
       <div className="lg:col-span-2 space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="hover:border-accent-blue/30 transition-all group ">
+          <Card className="hover:border-accent-blue/30 transition-all group">
             <div className="flex justify-between items-start mb-6">
               <div className="p-2.5 bg-bg-secondary rounded-[10px] text-accent-blue border border-border-subtle">
                 <TrendingUp size={22} />
@@ -92,9 +163,100 @@ export const Dashboard = () => {
                 <Info size={10} />
               </span>
             </div>
-            <p className="text-3xl md:text-4xl font-bold tracking-tight text-text-primary font-heading">
+            <p className="text-3xl md:text-4xl font-bold tracking-tight text-text-primary font-heading mb-5">
               {vaultBalance ? formatUnits(vaultBalance as bigint) : '0.00'} <span className="text-xs md:text-sm font-bold">aUSDY</span>
             </p>
+
+            {/* Vault deposit / withdraw */}
+            <div className="border-t border-border-subtle pt-4 space-y-3">
+              <div className="flex gap-1 p-1 bg-bg-secondary rounded-[8px] border border-border-subtle">
+                {(['deposit', 'withdraw'] as const).map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => { setVaultTab(tab); setVaultAmount(''); }}
+                    className={cn(
+                      'flex-1 py-1.5 text-[9px] font-bold tracking-widest rounded-[6px] transition-colors',
+                      vaultTab === tab ? 'bg-bg-primary text-text-primary' : 'text-text-muted hover:text-text-secondary'
+                    )}
+                  >
+                    {tab === 'deposit' ? 'DEPOSIT' : 'WITHDRAW'}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="0.00"
+                  value={vaultAmount}
+                  onChange={e => setVaultAmount(e.target.value)}
+                  className="flex-1 bg-bg-secondary border border-border-subtle rounded-[8px] px-3 py-2 text-xs font-mono font-bold text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-blue/50 transition-colors"
+                />
+                <button
+                  onClick={() => {
+                    const bal = vaultTab === 'deposit' ? usdyBalance : vaultBalance;
+                    if (bal) setVaultAmount(viemFormatUnits(bal as bigint, 18));
+                  }}
+                  className="px-2.5 bg-bg-secondary border border-border-subtle rounded-[8px] text-[9px] font-bold tracking-widest text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  MAX
+                </button>
+              </div>
+
+              <p className="text-[9px] text-text-muted">
+                {vaultTab === 'deposit'
+                  ? `Wallet: ${usdyBalance ? formatUnits(usdyBalance as bigint) : '0.00'} USDY`
+                  : `Vault: ${vaultBalance ? formatUnits(vaultBalance as bigint) : '0.00'} aUSDY`}
+              </p>
+
+              {vaultTab === 'deposit' ? (
+                needsVaultApproval ? (
+                  <button
+                    onClick={() => approveVault({
+                      address: EXTERNAL_ADDRESSES.USDY as `0x${string}`,
+                      abi: ERC20_ABI,
+                      functionName: 'approve',
+                      args: [CONTRACT_ADDRESSES.YieldVault, vaultAmountBigInt!],
+                    })}
+                    disabled={!vaultAmountBigInt || approvingVault || confirmingVaultApprove}
+                    className="btn-secondary w-full py-2.5 text-[9px] tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Vault size={12} />
+                    {approvingVault ? 'Check Wallet...' : confirmingVaultApprove ? 'Confirming...' : 'Approve USDY'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => depositVault({
+                      address: CONTRACT_ADDRESSES.YieldVault,
+                      abi: YIELD_VAULT_ABI,
+                      functionName: 'deposit',
+                      args: [vaultAmountBigInt!, address!],
+                    })}
+                    disabled={!vaultAmountBigInt || depositing || confirmingDeposit || !address}
+                    className="btn-primary w-full py-2.5 text-[9px] tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Vault size={12} />
+                    {depositing ? 'Check Wallet...' : confirmingDeposit ? 'Confirming...' : depositConfirmed ? '✓ Deposited' : 'Deposit USDY'}
+                  </button>
+                )
+              ) : (
+                <button
+                  onClick={() => withdrawVault({
+                    address: CONTRACT_ADDRESSES.YieldVault,
+                    abi: YIELD_VAULT_ABI,
+                    functionName: 'withdraw',
+                    args: [vaultAmountBigInt!, address!, address!],
+                  })}
+                  disabled={!vaultAmountBigInt || withdrawing || confirmingWithdraw || !address}
+                  className="btn-secondary w-full py-2.5 text-[9px] tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Vault size={12} />
+                  {withdrawing ? 'Check Wallet...' : confirmingWithdraw ? 'Confirming...' : withdrawConfirmed ? '✓ Withdrawn' : 'Withdraw USDY'}
+                </button>
+              )}
+            </div>
           </Card>
 
           <Card className="hover:border-accent-blue/30 transition-all group ">
@@ -194,6 +356,48 @@ export const Dashboard = () => {
             </Card>
           ))}
         </div>
+        <Card className="p-5">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-bg-secondary rounded-[10px] border border-border-subtle">
+                <Droplets size={16} className="text-accent-blue" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold tracking-widest text-text-primary">Testnet Faucet</p>
+                <p className="text-xs text-text-muted mt-0.5">Mint test tokens on Mantle Sepolia</p>
+              </div>
+            </div>
+            <Badge variant="default">Testnet Only</Badge>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => mintUsdy({
+                address: EXTERNAL_ADDRESSES.USDY as `0x${string}`,
+                abi: MOCK_ERC20_ABI,
+                functionName: 'mint',
+                args: [address!, MINT_AMOUNT],
+              })}
+              disabled={mintingUsdy || confirmingUsdy || !address}
+              className="btn-secondary py-2.5 text-[10px] tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Droplets size={12} />
+              {mintingUsdy ? 'Check Wallet...' : confirmingUsdy ? 'Confirming...' : usdyMinted ? '✓ 1,000 USDY Minted' : 'Mint 1,000 USDY'}
+            </button>
+            <button
+              onClick={() => mintMeth({
+                address: EXTERNAL_ADDRESSES.mETH as `0x${string}`,
+                abi: MOCK_ERC20_ABI,
+                functionName: 'mint',
+                args: [address!, MINT_AMOUNT],
+              })}
+              disabled={mintingMeth || confirmingMeth || !address}
+              className="btn-secondary py-2.5 text-[10px] tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Droplets size={12} />
+              {mintingMeth ? 'Check Wallet...' : confirmingMeth ? 'Confirming...' : methMinted ? '✓ 1,000 mETH Minted' : 'Mint 1,000 mETH'}
+            </button>
+          </div>
+        </Card>
       </div>
 
       <div className="space-y-8">
@@ -214,7 +418,7 @@ export const Dashboard = () => {
               </div>
             </div>
             <p className="text-sm leading-relaxed text-text-secondary mb-8 font-medium italic bg-bg-secondary/40 p-4 rounded-[12px] border border-border-subtle">
-              "Capital rotation to mETH is currently favored by ecosystem liquidity trends. Expected premium: 4.2% bps over native staking."
+              {aiSummary ?? 'Analysing live market conditions and yield dynamics…'}
             </p>
             <div className="flex items-center justify-between">
               <Badge variant="success">92% Match</Badge>

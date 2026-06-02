@@ -36,5 +36,5 @@ export const TTL = {
   YIELD_RATES: 5 * 60 * 1000,      // 5 minutes
   NANSEN: 10 * 60 * 1000,          // 10 minutes
   ELFA: 5 * 60 * 1000,             // 5 minutes
-  GROQ_BRIEF: 3 * 60 * 1000,       // 3 minutes
+  GROQ_BRIEF: 60 * 1000,            // 1 minute
 } as const;

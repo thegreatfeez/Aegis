@@ -1,4 +1,6 @@
 import { useAccount, useReadContract } from 'wagmi';
+import { useState, useEffect } from 'react';
+import { fetchAIRecommendation } from '../../services/ai';
 import { 
   BrainCircuit, 
   Bot, 
@@ -81,6 +83,23 @@ const CommitmentItem = ({ address, nonce }: { address: `0x${string}`, nonce: big
 
 export const Insights = () => {
   const { address } = useAccount();
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!address) return;
+    // Use neutral portfolio defaults — the AI generates market-level insight
+    // from live yield rates and sentiment regardless of user-specific balances
+    fetchAIRecommendation(address, {
+      portfolioValueUsd: 0,
+      riskMode: 1,
+      maxPositionBps: 5000,
+      usdyBalance: 0,
+      methBalance: 0,
+      agentId: 0,
+    })
+      .then(rec => setAiSummary(rec.summary))
+      .catch(() => {});
+  }, [address]);
 
   const { data: historyNonces } = useReadContract({
     address: CONTRACT_ADDRESSES.AdviceCommitment,
@@ -115,7 +134,7 @@ export const Insights = () => {
           <div className="relative z-10 space-y-6 md:space-y-8">
             <div className="p-4 md:p-6 bg-bg-secondary rounded-[12px] leading-relaxed text-text-primary">
               <p className="text-base md:text-lg italic font-medium">
-                "Mantle ecosystem liquidity is shifting towards RWA-backed stability. USDY yields are currently outperforming native ETH staking when accounting for recent network activity."
+                {aiSummary ?? 'Fetching market intelligence from live yield data…'}
               </p>
             </div>
 

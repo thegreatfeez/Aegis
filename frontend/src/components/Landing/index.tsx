@@ -1,14 +1,14 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, ArrowRight, Activity, BrainCircuit, Zap, BookOpen, Users, Layout, Database, Bot as Robot, Shield, Menu, X } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Activity, BrainCircuit, Zap, BookOpen, Users, Layout, Database, Bot as Robot, Shield, Menu, X, FileText } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import './Landing.css';
 
 const descriptions = [
-  "Aegis is an on-chain autonomous agent designed for high-conviction RWA yield management. Protected by AI strategies, verified on-chain.",
-  "Institutional-grade security meets automated yield optimization. Leverage Mantle's top RWA protocols with zero manual effort.",
-  "Your personal digital custodian. Aegis monitors global liquidity flows to keep your portfolio ahead of the curve."
+  "Aegis watches your USDY and mETH holdings, reads live market rates, and tells you exactly when to move your money — how much, at what price, and when to take profit. Like a financial advisor that runs on the blockchain.",
+  "Most DeFi users leave yield on the table by staying in the wrong asset. Aegis analyses the live APY gap between USDY and mETH and gives you a precise, actionable signal — not vague advice.",
+  "Every recommendation Aegis gives is permanently recorded on Mantle before your trade executes. You can verify the AI's exact reasoning on-chain, any time. No black box — full transparency."
 ];
 
 const AnimatedText = ({ text, className }: { text: string; className?: string }) => {
@@ -91,18 +91,24 @@ export const Landing = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-8">
-            <button 
+            <button
               onClick={() => toggleSection('about')}
               className={cn("text-xs font-bold tracking-widest transition-all px-4 py-2 rounded-full", activeTab === 'about' ? 'bg-accent-blue/10 text-accent-blue' : 'text-white hover:text-accent-blue')}
             >
               About
             </button>
-            <button 
+            <button
               onClick={() => toggleSection('how-to')}
               className={cn("text-xs font-bold tracking-widest transition-all px-4 py-2 rounded-full", activeTab === 'how-to' ? 'bg-accent-success/10 text-accent-success' : 'text-white hover:text-accent-success')}
             >
               How to Use
             </button>
+            <Link
+              to="/whitepaper"
+              className="flex items-center gap-1.5 text-xs font-bold tracking-widest text-text-muted hover:text-white transition-colors px-4 py-2"
+            >
+              <FileText size={13} /> Whitepaper
+            </Link>
           </div>
 
           <div className="flex items-center gap-4">
@@ -143,7 +149,13 @@ export const Landing = () => {
               >
                 How to Use
               </button>
-              <Link 
+              <Link
+                to="/whitepaper"
+                className="block w-full p-4 text-sm font-bold tracking-widest text-text-muted hover:text-white hover:bg-bg-secondary rounded-xl transition-all flex items-center gap-2"
+              >
+                <FileText size={15} /> Whitepaper
+              </Link>
+              <Link
                 to="/dashboard"
                 className="flex sm:hidden w-full items-center justify-between p-4 bg-text-primary text-bg-primary rounded-xl font-bold text-sm"
               >
@@ -174,7 +186,7 @@ export const Landing = () => {
             />
           </div>
           
-          <div className="h-32 md:h-20 mb-12 md:mb-16 relative overflow-hidden">
+          <div className="h-52 md:h-32 mb-12 md:mb-16 relative overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.p
                 key={descIndex}
@@ -190,19 +202,19 @@ export const Landing = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6">
-            <Link 
+            <Link
               to="/dashboard"
-              className="w-full sm:w-auto px-6 md:px-10 py-4 md:py-5 bg-accent-blue hover:brightness-110 text-white rounded-[40px] font-bold text-lg transition-all flex items-center justify-center gap-3 active:scale-95 shadow-xl shadow-accent-blue/10 "
+              className="w-full sm:w-auto px-6 md:px-10 py-4 md:py-5 bg-accent-blue hover:brightness-110 text-white rounded-[40px] font-bold text-lg transition-all flex items-center justify-center gap-3 active:scale-95 shadow-xl shadow-accent-blue/10"
             >
               Access Terminal
               <Zap size={20} fill="currentColor" />
             </Link>
-            <button 
-              onClick={() => toggleSection('how-to')}
-              className="w-full sm:w-auto px-6 md:px-10 py-4 md:py-5 bg-bg-secondary hover:bg-bg-card bg-text-primary text-bg-primary/90 rounded-[40px] font-bold text-lg transition-all "
+            <Link
+              to="/whitepaper"
+              className="w-full sm:w-auto px-6 md:px-10 py-4 md:py-5 bg-bg-secondary hover:bg-bg-card text-text-primary rounded-[40px] font-bold text-lg transition-all flex items-center justify-center gap-3"
             >
-              Learn More
-            </button>
+              <FileText size={18} /> Read Whitepaper
+            </Link>
           </div>
         </div>
 
@@ -224,16 +236,16 @@ export const Landing = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
                   <div className="space-y-8 md:space-y-10">
                     <div className="space-y-4 text-center lg:text-left">
-                      <span className="text-[10px] font-bold tracking-[0.3em] text-accent-blue">Our Mission</span>
-                      <h2 className="text-4xl md:text-5xl font-black font-heading tracking-tighter">SECURING THE <br className="hidden md:block" /><span className="text-accent-blue/80">YIELD FRONTIER.</span></h2>
+                      <span className="text-[10px] font-bold tracking-[0.3em] text-accent-blue">What Aegis Does</span>
+                      <h2 className="text-4xl md:text-5xl font-black font-heading tracking-tighter">YOUR CRYPTO,<br className="hidden md:block" /><span className="text-accent-blue/80">WORKING HARDER.</span></h2>
                     </div>
                     <p className="text-base md:text-lg text-text-secondary leading-relaxed font-medium text-center lg:text-left">
-                      Aegis was born from the need for institutional-grade reliability in the rapidly evolving RWA ecosystem. We believe that yield optimization shouldn't require constant manual oversight or exposure to hidden risks.
+                      Think of USDY and mETH as two different savings accounts on the Mantle blockchain. USDY earns a steady yield backed by real US Treasury Bills — stable, dollar-pegged, predictable. mETH earns ETH staking rewards plus any growth in ETH's price — higher potential, more movement. The catch is that the better option changes constantly as rates shift and markets move. Aegis tracks both in real time and tells you which one you should be in right now, how much to move, at what price to take profit, and when to cut your losses — all derived from your actual balances and live on-chain data.
                     </p>
                     <div className="grid grid-cols-2 gap-4 md:gap-8 max-w-sm mx-auto lg:mx-0">
                        <div className="space-y-2 text-center lg:text-left">
-                          <p className="text-2xl md:text-3xl font-black font-heading text-white">4.2%</p>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Targeted Alpha</p>
+                          <p className="text-2xl md:text-3xl font-black font-heading text-white">Live</p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">APY Monitoring</p>
                        </div>
                        <div className="space-y-2 text-center lg:text-left">
                           <p className="text-2xl md:text-3xl font-black font-heading text-white">100%</p>
@@ -246,10 +258,10 @@ export const Landing = () => {
                     <div className="absolute inset-0 about-feature-icon rounded-full blur-3xl opacity-20" />
                     <div className="grid grid-cols-2 gap-4 relative z-10">
                       {[
-                        { icon: Users, label: "Trustless", color: "text-accent-blue" },
-                        { icon: Layout, label: "Modular", color: "text-accent-success" },
-                        { icon: Database, label: "Verifiable", color: "text-accent-warning" },
-                        { icon: Shield, label: "Bulletproof", color: "text-accent-danger" }
+                        { icon: Users, label: "No Sign-Up", color: "text-accent-blue" },
+                        { icon: Layout, label: "Your Keys", color: "text-accent-success" },
+                        { icon: Database, label: "On-Chain Proof", color: "text-accent-warning" },
+                        { icon: Shield, label: "Risk-Gated", color: "text-accent-danger" }
                       ].map((item, i) => (
                         <div key={i} className="p-6 md:p-8 bg-bg-secondary border border-border-subtle rounded-3xl flex flex-col items-center justify-center gap-3 md:gap-4 hover:border-white/20 transition-all animate-float" style={{ animationDelay: `${i * 0.5}s` }}>
                           <item.icon className={item.color} size={28} />
@@ -277,31 +289,31 @@ export const Landing = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                   {[
-                    { 
-                      step: "01", 
-                      title: "Secure Terminal", 
-                      desc: "Connect your Mantle-compatible wallet (Metamask, Rabby, etc) to initialize the Aegis environment.",
+                    {
+                      step: "01",
+                      title: "Connect Your Wallet",
+                      desc: "Open Aegis and connect your Mantle-compatible wallet — MetaMask, Rabby, or any WalletConnect wallet works. No sign-up, no email, no KYC. Aegis reads your token balances directly from the blockchain.",
                       icon: ShieldCheck,
                       color: "border-accent-blue/30"
                     },
-                    { 
-                      step: "02", 
-                      title: "Mint AI Agent", 
-                      desc: "Configure your risk appetite and mint your unique Aegis Agent NFT—your verifiable on-chain custodian.",
+                    {
+                      step: "02",
+                      title: "Set Your Risk Level",
+                      desc: "Choose how aggressively you want to manage yield: Conservative, Moderate, or Aggressive. This creates your AI Agent — a unique identity on Mantle that keeps a permanent, verifiable record of every recommendation and trade in your name.",
                       icon: Robot,
                       color: "border-accent-success/30"
                     },
-                    { 
-                      step: "03", 
-                      title: "Set Allocation", 
-                      desc: "Define your target exposure between USDY (RWA) and mETH (LST). Our AI will build the optimal path.",
+                    {
+                      step: "03",
+                      title: "Get Your AI Signal",
+                      desc: "Aegis reads your live USDY and mETH balances, fetches the current yield rates from both protocols, and runs them through AI. You get a specific signal: what to buy, how much, at what level to take profit, and where to set your stop-loss. Actual numbers — not vague suggestions.",
                       icon: Activity,
                       color: "border-accent-warning/30"
                     },
-                    { 
-                      step: "04", 
-                      title: "Live Execution", 
-                      desc: "Automated rebalancing begins. Sit back as Aegis handles rotation and monitoring 24/7.",
+                    {
+                      step: "04",
+                      title: "Approve & Trade",
+                      desc: "Review the signal in the Order Builder. When you're ready, approve the commitment — this records the AI's advice permanently on Mantle — then confirm the swap. Your trade settles through Merchant Moe's DEX and your portfolio updates instantly.",
                       icon: Zap,
                       color: "border-accent-danger/30"
                     }
@@ -331,20 +343,20 @@ export const Landing = () => {
           {[
             {
               icon: BrainCircuit,
-              title: "Autonomous Intelligence",
-              desc: "Deep analysis of Mantle ecosystem liquidity to identify rotation points between USDY and mETH markets.",
+              title: "Precise AI Signals",
+              desc: "Aegis doesn't just say 'buy mETH'. It tells you the exact amount to move, why the yield spread justifies it right now, what price to take profit at, and what level would prove the trade wrong. Every signal is grounded in your real balance and live market APYs.",
               color: "text-accent-blue"
             },
             {
               icon: ShieldCheck,
-              title: "On-Chain Audit Log",
-              desc: "Every rebalance is backed by a cryptographic commitment. Publicly verifiable for institutional accountability.",
+              title: "Every Trade Proven On-Chain",
+              desc: "Before any swap happens, Aegis records the AI's full recommendation on the Mantle blockchain as a tamper-proof hash. This means you — or anyone — can look up any past signal and verify exactly what the AI advised and what data it had at that moment. No one can change it after the fact.",
               color: "text-accent-success"
             },
             {
               icon: Activity,
-              title: "Defense-Tech Risk Engine",
-              desc: "Automated risk policies ensure your concentration never exceeds your appetite. Built for reliability.",
+              title: "Risk Limits You Control",
+              desc: "You set how much of your portfolio Aegis can advise moving in a single trade. These limits live in a smart contract — not a preference that can be quietly overridden. The AI always works within the bounds you choose, and your wallet always stays in your control.",
               color: "text-accent-warning"
             }
           ].map((feature, i) => (

@@ -14,11 +14,18 @@ import { config } from './lib/wagmi';
 import './index.css';
 import App from './App.tsx';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 1_000 * 60 * 60 * 24, // keep cached data for 24 h
+      retry: 1,
+    },
+  },
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <WagmiProvider config={config}>
+    <WagmiProvider config={config} reconnectOnMount={true}>
       <QueryClientProvider client={queryClient}>
         <ConnectKitProvider theme="dark">
           <App />

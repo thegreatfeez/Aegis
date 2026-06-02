@@ -14,7 +14,8 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const body = GroqProxyRequestSchema.parse(req.body);
 
-    const cacheKey = `groq:${body.walletAddress}:${body.riskMode}:${Math.floor(Date.now() / TTL.GROQ_BRIEF)}`;
+    const SCHEMA_V = 'v2'; // bump when AIRecommendationSchema changes
+    const cacheKey = `groq:${SCHEMA_V}:${body.walletAddress}:${body.riskMode}:${Math.floor(Date.now() / TTL.GROQ_BRIEF)}`;
     const cached = cache.get(cacheKey);
     if (cached) {
       logger.info('Cache hit: groq-proxy', { wallet: body.walletAddress });

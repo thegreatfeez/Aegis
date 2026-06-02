@@ -1,4 +1,4 @@
-import { http, createConfig } from 'wagmi';
+import { http, createConfig, createStorage } from 'wagmi';
 import { mainnet, mantleSepoliaTestnet } from 'wagmi/chains';
 import { getDefaultConfig } from 'connectkit';
 
@@ -11,5 +11,6 @@ export const config = createConfig(
     },
     walletConnectProjectId: 'def4ca562725e1a1200155b41a227eb5',
     appName: 'Aegis',
+    storage: createStorage({ storage: window.localStorage }),
   })
 );

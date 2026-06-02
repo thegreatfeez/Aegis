@@ -72,13 +72,33 @@ async function fetchUSDYApy(): Promise<number> {
   }
 }
 
+async function fetchTokenPrices(): Promise<{ usdy: number; meth: number }> {
+  try {
+    // Use ETH price as mETH proxy (liquid staking token ≈ ETH price)
+    // USDY is a yield-bearing stablecoin — price stays at $1.00
+    const res = await fetch(
+      'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
+      { signal: AbortSignal.timeout(5000) },
+    );
+    if (!res.ok) throw new Error(`CoinGecko ${res.status}`);
+    const json = (await res.json()) as Record<string, { usd: number }>;
+    const ethPrice = json['ethereum']?.usd;
+    if (!ethPrice || typeof ethPrice !== 'number') throw new Error('Missing ETH price');
+    return { usdy: 1.00, meth: ethPrice };
+  } catch (err) {
+    logger.warn('Price fetch failed, using fallbacks', { err: String(err) });
+    return { usdy: 1.00, meth: 3200 };
+  }
+}
+
 export async function getYieldRates(): Promise<YieldRatesResponse> {
   const cached = cache.get<YieldRatesResponse>(CACHE_KEY);
   if (cached) return cached;
 
-  const [usdyApy, methApy] = await Promise.all([
+  const [usdyApy, methApy, prices] = await Promise.all([
     fetchUSDYApy(),
     fetchMETHApyFromChain(),
+    fetchTokenPrices(),
   ]);
 
   const result: YieldRatesResponse = {
@@ -89,10 +109,11 @@ export async function getYieldRates(): Promise<YieldRatesResponse> {
       usdy: 'ondo-finance-api',
       meth: 'mantle-staking-contract',
     },
+    prices,
   };
 
   cache.set(CACHE_KEY, result, TTL.YIELD_RATES);
-  logger.info('Yield rates fetched', { usdy: usdyApy, meth: methApy });
+  logger.info('Yield rates fetched', { usdy: usdyApy, meth: methApy, prices });
 
   return result;
 }

@@ -10,15 +10,22 @@ export const GroqProxyRequestSchema = z.object({
   usdyBalance: z.number().min(0),
   methBalance: z.number().min(0),
   agentId: z.number().min(0),
+  targetUsdyAllocationPct: z.number().min(0).max(100).optional().default(50),
 });
 
 export const AIRecommendationSchema = z.object({
   signal: z.enum(['ROTATE', 'HOLD', 'COMPOUND']),
+  signal_strength: z.enum(['STRONG', 'MODERATE', 'WEAK']),
   confidence: z.number().min(0).max(100),
   summary: z.string().min(1),
   from_asset: z.enum(['USDY', 'mETH']),
   to_asset: z.enum(['USDY', 'mETH']),
   suggested_pct_shift: z.number().min(0).max(100),
+  suggested_amount: z.string(),
+  action_detail: z.string().min(1),
+  entry_condition: z.string().min(1),
+  take_profit: z.string().min(1),
+  stop_loss: z.string().min(1),
   risk_note: z.string().min(1),
 });
 
@@ -68,6 +75,10 @@ export const YieldRatesResponseSchema = z.object({
   source: z.object({
     usdy: z.string(),
     meth: z.string(),
+  }),
+  prices: z.object({
+    usdy: z.number(),
+    meth: z.number(),
   }),
 });
 
