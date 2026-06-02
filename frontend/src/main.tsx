@@ -27,7 +27,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <WagmiProvider config={config} reconnectOnMount={true}>
       <QueryClientProvider client={queryClient}>
-        <ConnectKitProvider theme="dark">
+        <ConnectKitProvider theme={"dark" as any}>
           <App />
         </ConnectKitProvider>
       </QueryClientProvider>

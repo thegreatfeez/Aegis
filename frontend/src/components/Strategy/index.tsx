@@ -180,7 +180,7 @@ export const Strategy = () => {
 
   useEffect(() => {
     if (!address || !userProfile || recommendation || fetchInitiated.current) return;
-    const [, , , , createdAt] = userProfile as any[];
+    const [, , , , createdAt] = userProfile as unknown as any[];
     if (!createdAt) return;
     runAIFetch();
   }, [address, userProfile, agentId]);
