@@ -31,6 +31,7 @@ export const Whitepaper = () => {
 
         {/* Cover */}
         <div className="mb-20 print:mb-12">
+          <img src="/AegisLogo.png" alt="Aegis Logo" className="w-32 h-32 mx-auto mb-8 block" />
           <p className="text-[10px] font-bold tracking-[0.3em] text-accent-blue mb-4">TECHNICAL WHITEPAPER · v1.0</p>
           <h1 className="text-5xl md:text-6xl font-black font-heading tracking-tight mb-6">
             Aegis Protocol
