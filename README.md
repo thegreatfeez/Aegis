@@ -6,7 +6,7 @@
 
 > AI-powered yield strategy protocol on Mantle — on-chain commitment of every AI recommendation before execution.
 
-For a full explanation of the protocol design, architecture, and economics, read the **[Aegis Whitepaper](https://aegis-wine-beta.vercel.app/whitepaper)** (available to read or download as PDF from the landing page).
+For a full explanation of the protocol design, architecture, and economics, read the **[Aegis Whitepaper](https://aegis-protocol-xi.vercel.app/whitepaper)** (available to read or download as PDF from the landing page).
 
 ---
 
