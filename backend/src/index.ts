@@ -24,10 +24,7 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
 }));
-app.options('*', cors());
 
 app.use(express.json({ limit: '64kb' }));
 app.use(requestLogger);
