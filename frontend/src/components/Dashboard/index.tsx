@@ -122,7 +122,6 @@ export const Dashboard = () => {
 
   const [commitmentCount, executionCount] = stats as [bigint, bigint] || [0n, 0n];
 
-  // Fire once when the user profile is confirmed on-chain
   useEffect(() => {
     if (!address || !userProfile) return;
     const [, riskMode, maxPositionBps, , createdAt] = userProfile as unknown as any[];
@@ -139,7 +138,7 @@ export const Dashboard = () => {
     })
       .then(rec => setAiSummary(rec.summary))
       .catch(() => {});
-  }, [userProfile, address]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userProfile, address]); 
 
   const assets = [
     { name: 'USDY', detail: 'Ondo Finance RWA', balance: usdyBalance, risk: 'Low Risk', initial: 'U' },

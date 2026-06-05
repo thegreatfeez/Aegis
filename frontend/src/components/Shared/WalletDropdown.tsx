@@ -11,7 +11,20 @@ export const WalletDropdown = () => {
   const { chains, switchChain } = useSwitchChain();
   const [isOpen, setIsOpen] = useState(false);
 
-  if (!isConnected) return <ConnectKitButton />;
+  if (!isConnected) {
+    return (
+      <ConnectKitButton.Custom>
+        {({ show }) => (
+          <button 
+            onClick={show}
+            className="px-8 py-3 bg-accent-blue hover:brightness-110 transition-all rounded-[12px] text-white text-sm font-bold uppercase tracking-widest shadow-lg active:scale-[0.98]"
+          >
+            Access Terminal
+          </button>
+        )}
+      </ConnectKitButton.Custom>
+    );
+  }
 
   return (
     <div className="relative">

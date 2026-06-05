@@ -56,10 +56,15 @@ type UserProfileRecord = readonly [`0x${string}`, number, number, number, bigint
 
 export const DashboardLayout = () => {
   const { address, isConnected, isReconnecting } = useAccount();
+  const [mounted, setMounted] = useState(false);
   const [showInitModal, setShowInitModal] = useState(false);
   const [selectedRisk, setSelectedRisk] = useState<0 | 1 | 2>(1);
   const [dismissedInitForAddress, setDismissedInitForAddress] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const {
     writeContract: writeInit,
@@ -168,7 +173,7 @@ export const DashboardLayout = () => {
 
           <div className="flex items-center gap-3 md:gap-6">
             <div className="hidden sm:block">
-              <WalletDropdown />
+              {mounted && <WalletDropdown />}
             </div>
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -205,7 +210,7 @@ export const DashboardLayout = () => {
                   </NavLink>
                 ))}
                 <div className="pt-4 sm:hidden">
-                  <WalletDropdown />
+                  {mounted && <WalletDropdown />}
                 </div>
               </div>
             </motion.div>
@@ -214,18 +219,30 @@ export const DashboardLayout = () => {
       </nav>
 
       <main className="max-w-7xl mx-auto px-6 py-6 md:py-10">
-        {isReconnecting ? (
+        {!mounted ? (
+          <div className="flex flex-col items-center justify-center py-20 md:py-32 text-center">
+            <div className="w-8 h-8 border-2 border-accent-blue/30 border-t-accent-blue rounded-full animate-spin mb-4" />
+            <p className="text-[10px] font-bold tracking-widest text-text-muted">Initializing terminal...</p>
+          </div>
+        ) : isReconnecting ? (
           <div className="flex flex-col items-center justify-center py-20 md:py-32 text-center">
             <div className="w-8 h-8 border-2 border-accent-blue/30 border-t-accent-blue rounded-full animate-spin mb-4" />
             <p className="text-[10px] font-bold tracking-widest text-text-muted">Restoring session...</p>
           </div>
         ) : !isConnected ? (
           <div className="flex flex-col items-center justify-center py-20 md:py-32 text-center animate-in fade-in slide-in-from-bottom-4 duration-1000">
-             <div className="w-16 h-16 md:w-20 md:h-20 bg-bg-secondary rounded-[20px] flex items-center justify-center border border-border-subtle mb-6 md:mb-8 relative">
-                <Bot size={32} className="text-text-muted" />
+             <div className="w-16 h-16 md:w-20 md:h-20 bg-accent-blue rounded-[20px] flex items-center justify-center border border-white/10 mb-6 md:mb-8 relative">
+                <Bot size={32} className="text-white" />
              </div>
-             <h2 className="text-2xl md:text-3xl font-black mb-3 md:mb-4 tracking-tight font-heading uppercase">Initialize Secure Terminal</h2>
-             <p className="text-text-secondary mb-8 md:mb-10 max-w-sm text-sm font-medium">Verify your decentralized identity to access AI-driven yield strategies on Mantle.</p>
+             
+             <h2 className="text-2xl md:text-3xl font-black mb-3 md:mb-4 tracking-tight font-heading uppercase text-accent-blue">
+               Initialize Secure Terminal
+             </h2>
+             
+             <p className="text-text-secondary mb-8 md:mb-10 max-w-sm text-sm font-medium">
+               Verify your decentralized identity to access AI-driven yield strategies on Mantle.
+             </p>
+             
              <WalletDropdown />
           </div>
         ) : (
@@ -288,7 +305,7 @@ export const DashboardLayout = () => {
       </main>
 
       <AnimatePresence>
-        {isInitModalOpen && (
+        {mounted && isInitModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
             <motion.div
               initial={{ opacity: 0 }}
